@@ -11,9 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 创建数据目录
 RUN mkdir -p /app/data && chmod 777 /app/data
 
-# 复制应用代码
+# 复制应用代码和 VERSION 文件
 COPY requirements.txt .
 COPY direct_link_service.py .
+COPY VERSION .  
 
 # 安装 Python 依赖
 RUN pip install --no-cache-dir -r requirements.txt
