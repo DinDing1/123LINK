@@ -3,7 +3,11 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from p123 import P123Client, check_response, P123OSError
 import logging
 from datetime import datetime, timedelta, timezone
-import errno  
+import errno
+import sqlite3
+from contextlib import closing
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
 import os
 
 # 配置日志
@@ -23,6 +27,51 @@ client = P123Client(
     password=os.getenv("P123_PASSWORD")
 )
 token_expiry = None  # 用于存储 Token 的过期时间
+
+# SQLite 缓存数据库路径
+DB_PATH = "cache.db"
+
+def init_db():
+    """初始化 SQLite 数据库"""
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_name TEXT NOT NULL,
+            size INTEGER NOT NULL,
+            etag TEXT NOT NULL,
+            download_url TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP GENERATED ALWAYS AS (DATETIME(created_at, '+20 hours')) STORED
+        )''')
+        # 创建复合索引
+        c.execute('''CREATE INDEX IF NOT EXISTS idx_main ON cache (file_name, size, etag)''')
+        conn.commit()
+
+# 初始化数据库
+init_db()
+
+def clear_expired_entries():
+    """清理过期条目（每次请求时自动执行）"""
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("DELETE FROM cache WHERE expires_at < datetime('now')")
+        conn.commit()
+        logger.info(f"清理过期缓存，删除 {c.rowcount} 条记录")
+
+def clear_all_cache():
+    """全量清理（每48小时执行）"""
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        c = conn.cursor()
+        c.execute("DELETE FROM cache")
+        conn.commit()
+        logger.info("已清空全部缓存")
+
+# 初始化定时任务
+scheduler = BackgroundScheduler()
+scheduler.add_job(clear_all_cache, 'interval', hours=48)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
 
 def login_client():
     """登录并更新 Token 和过期时间"""
@@ -84,21 +133,38 @@ async def index(request: Request, uri: str):
 
         parts = uri.split("|")
         file_name = parts[0]
-        size = parts[1]
+        size = int(parts[1])  # 转换为整数
         etag = parts[2].split("?")[0]
         s3_key_flag = request.query_params.get("s3keyflag", "")
 
-        # 构造字典参数（与原代码兼容）
-        payload = {
-            "FileName": file_name,
-            "Size": int(size),
-            "Etag": etag,
-            "S3KeyFlag": s3_key_flag
-        }
+        # 自动清理过期条目
+        clear_expired_entries()
 
-        # 使用原 download_info 方法
+        # 检查缓存
+        with closing(sqlite3.connect(DB_PATH)) as conn:
+            c = conn.cursor()
+            c.execute('''SELECT download_url FROM cache 
+                      WHERE file_name=? AND size=? AND etag=? 
+                      AND expires_at > datetime('now')''',
+                      (file_name, size, etag))
+            if (row := c.fetchone()):
+                logger.info(f"缓存命中: {file_name}")
+                return RedirectResponse(row[0], 302)
+
+        # 无缓存则继续原有流程
+        payload = {"FileName": file_name, "Size": size, "Etag": etag, "S3KeyFlag": s3_key_flag}
         download_resp = check_response(client.download_info(payload))
         download_url = download_resp["data"]["DownloadUrl"]
+
+        # 写入缓存
+        with closing(sqlite3.connect(DB_PATH)) as conn:
+            c = conn.cursor()
+            c.execute('''INSERT INTO cache 
+                       (file_name, size, etag, download_url)
+                       VALUES (?,?,?,?)''',
+                       (file_name, size, etag, download_url))
+            conn.commit()
+
         logger.info(f"302 重定向成功: {file_name}")
         return RedirectResponse(download_url, 302)
 
