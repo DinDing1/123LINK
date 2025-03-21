@@ -1,14 +1,19 @@
-# 使用Python 3.12 slim镜像减小体积
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# 先安装依赖以利用Docker缓存
+# 安装系统依赖（用于SQLite）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
-COPY direct_link_service.py .
+COPY . .
 
-# 运行命令（使用--log-level warning减少uvicorn日志）
+# 设置容器时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+
 CMD ["uvicorn", "direct_link_service:app", "--host", "0.0.0.0", "--port", "8123", "--log-level", "warning"]
