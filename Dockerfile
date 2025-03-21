@@ -6,22 +6,19 @@ WORKDIR /app
 # 复制 requirements.txt
 COPY requirements.txt .
 
-# 安装依赖到本地目录
-RUN pip install --no-cache-dir --user -r requirements.txt
+# 全局安装 uvicorn
+RUN pip install --no-cache-dir uvicorn
 
 # 第二阶段：运行时环境
-FROM alpine:latest
+FROM python:3.12-alpine
 
 WORKDIR /app
 
-# 安装 Python、SQLite3 和其他必要的系统依赖
-RUN apk add --no-cache python3 py3-pip sqlite
+# 安装 SQLite3 和其他必要的系统依赖
+RUN apk add --no-cache sqlite
 
-# 从构建阶段复制已安装的 Python 依赖
-COPY --from=builder /root/.local /root/.local
-
-# 确保脚本使用的 Python 依赖在 PATH 中
-ENV PATH=/root/.local/bin:$PATH
+# 从构建阶段复制 uvicorn
+COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 # 复制应用代码和 VERSION 文件
 COPY direct_link_service.py .
