@@ -3,12 +3,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from p123 import P123Client, check_response, P123OSError
 import logging
 from datetime import datetime, timedelta, timezone
-import errno  # 导入 errno 模块
+import errno  
 import os
-client = P123Client(
-    passport=os.getenv("P123_PASSPORT"),
-    password=os.getenv("P123_PASSWORD")
-)
 
 # 配置日志
 logging.basicConfig(
