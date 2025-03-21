@@ -6,8 +6,8 @@ WORKDIR /app
 # 复制 requirements.txt
 COPY requirements.txt .
 
-# 全局安装 uvicorn
-RUN pip install --no-cache-dir uvicorn
+# 全局安装 uvicorn 和其他依赖
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 第二阶段：运行时环境
 FROM python:3.12-alpine
@@ -17,7 +17,8 @@ WORKDIR /app
 # 安装 SQLite3 和其他必要的系统依赖
 RUN apk add --no-cache sqlite
 
-# 从构建阶段复制 uvicorn
+# 从构建阶段复制 Python 的 site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 # 复制应用代码和 VERSION 文件
