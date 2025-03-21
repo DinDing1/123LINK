@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  direct-link-service:
+    build: .
+    environment:
+      - P123_PASSPORT=${P123_PASSPORT}
+      - P123_PASSWORD=${P123_PASSWORD}
+      - TZ=Asia/Shanghai
+    ports:
+      - "8123:8123"
