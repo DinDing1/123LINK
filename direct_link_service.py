@@ -10,6 +10,21 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import os
 
+# 版本号信息
+VERSION = "1.0.0"
+
+# 首次启动时显示的欢迎信息
+WELCOME_MESSAGE = f"""
+-----------------------------------------
+   欢迎使用123网盘直连服务
+
+                      版本号：{VERSION}
+-----------------------------------------
+"""
+
+# 打印欢迎信息
+print(WELCOME_MESSAGE)
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
