@@ -35,6 +35,9 @@ DB_PATH = os.path.join(DB_DIR, "cache.db")
 
 def init_db():
     """初始化 SQLite 数据库"""
+    # 确保数据库目录存在
+    os.makedirs(DB_DIR, exist_ok=True)
+    
     with closing(sqlite3.connect(DB_PATH)) as conn:
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS cache (
