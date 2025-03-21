@@ -10,8 +10,17 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import os
 
-# 版本号信息
-VERSION = "1.0.0"
+# 读取 VERSION 文件中的版本号
+def get_version():
+    """从 VERSION 文件中读取版本号"""
+    version_file = os.path.join(os.path.dirname(__file__), "VERSION")
+    if os.path.exists(version_file):
+        with open(version_file, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return "未知版本"
+
+# 获取版本号
+VERSION = get_version()
 
 # 首次启动时显示的欢迎信息
 WELCOME_MESSAGE = f"""
