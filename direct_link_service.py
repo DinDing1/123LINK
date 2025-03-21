@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 # 禁用 httpx 的日志
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
+# 设置 APScheduler 的日志级别为 WARNING
+scheduler_logger = logging.getLogger('apscheduler')
+scheduler_logger.setLevel(logging.WARNING)
+
 # 初始化客户端
 client = P123Client(
     passport=os.getenv("P123_PASSPORT"),
@@ -29,7 +33,6 @@ client = P123Client(
 token_expiry = None  # 用于存储 Token 的过期时间
 
 # SQLite 缓存数据库路径
-# 确保数据库目录存在
 DB_DIR = "/app/data"
 DB_PATH = os.path.join(DB_DIR, "cache.db")
 
