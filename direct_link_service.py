@@ -22,18 +22,6 @@ def get_version():
 # 获取版本号
 VERSION = get_version()
 
-# 首次启动时显示的欢迎信息
-WELCOME_MESSAGE = f"""
------------------------------------------
-   欢迎使用123网盘直连服务
-
-                      版本号：{VERSION}
------------------------------------------
-"""
-
-# 打印欢迎信息
-print(WELCOME_MESSAGE)
-
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +36,14 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # 设置 APScheduler 的日志级别为 WARNING
 scheduler_logger = logging.getLogger('apscheduler')
 scheduler_logger.setLevel(logging.WARNING)
+
+# 输出欢迎消息
+logger.info(
+    "\n-----------------------------------------\n"
+    "   欢迎使用123网盘直连服务\n\n"
+    "                      版本号：{}\n"
+    "-----------------------------------------".format(VERSION)
+)
 
 # 初始化客户端
 client = P123Client(
