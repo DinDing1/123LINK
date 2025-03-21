@@ -10,3 +10,5 @@ services:
       - TZ=Asia/Shanghai
       - P123_PASSPORT=${P123_PASSPORT}
       - P123_PASSWORD=${P123_PASSWORD}
+    volumes:
+      - ./cache:/app/cache.db
