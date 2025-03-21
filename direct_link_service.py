@@ -4,6 +4,11 @@ from p123 import P123Client, check_response, P123OSError
 import logging
 from datetime import datetime, timedelta, timezone
 import errno  # 导入 errno 模块
+import os
+client = P123Client(
+    passport=os.getenv("P123_PASSPORT"),
+    password=os.getenv("P123_PASSWORD")
+)
 
 # 配置日志
 logging.basicConfig(
@@ -17,7 +22,10 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # 初始化客户端
-client = P123Client(passport="17504670212", password="ztj040712")
+client = P123Client(
+    passport=os.getenv("P123_PASSPORT"),
+    password=os.getenv("P123_PASSWORD")
+)
 token_expiry = None  # 用于存储 Token 的过期时间
 
 def login_client():
