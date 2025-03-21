@@ -29,7 +29,9 @@ client = P123Client(
 token_expiry = None  # 用于存储 Token 的过期时间
 
 # SQLite 缓存数据库路径
-DB_PATH = "cache.db"
+# 确保数据库目录存在
+DB_DIR = "/app/data"
+DB_PATH = os.path.join(DB_DIR, "cache.db")
 
 def init_db():
     """初始化 SQLite 数据库"""
