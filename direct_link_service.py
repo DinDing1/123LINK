@@ -65,7 +65,8 @@ def clear_expired_entries():
         c = conn.cursor()
         c.execute("DELETE FROM cache WHERE expires_at < datetime('now')")
         conn.commit()
-        logger.info(f"清理过期缓存，删除 {c.rowcount} 条记录")
+        # 去掉日志输出，或者改为调试级别
+        # logger.debug(f"清理过期缓存，删除 {c.rowcount} 条记录")
 
 def clear_all_cache():
     """全量清理（每48小时执行）"""
