@@ -18,7 +18,7 @@ class Config:
     # STRM生成配置（改为环境变量读取）
     BASE_URL = os.getenv("BASE_URL", "http://172.17.0.1:8123")  # 设置默认值
 
-    OUTPUT_ROOT = "./strm_output"
+    OUTPUT_ROOT = "/app/strm_output"
     VIDEO_EXTENSIONS = ('.mp4', '.mkv', '.avi', '.mov', '.flv', '.ts', '.iso', '.rmvb', '.m2ts')
     SUBTITLE_EXTENSIONS = ('.srt', '.ass', '.sub', '.ssa', '.vtt')
     MAX_DEPTH = -1
