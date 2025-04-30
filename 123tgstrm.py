@@ -1,6 +1,7 @@
 import os
 import re
 import requests
+import httpx
 from p123.tool import share_iterdir
 from datetime import datetime
 from colorama import init, Fore, Style
@@ -30,8 +31,8 @@ class Config:
 
 # 动态设置代理
 proxies = {
-    'http': Config.HTTP_PROXY,
-    'https': Config.HTTP_PROXY
+    'http://': Config.HTTP_PROXY,
+    'https://': Config.HTTP_PROXY
 } if Config.HTTP_PROXY else None
 
 if Config.HTTP_PROXY:
@@ -145,23 +146,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     # 启动验证
     if not Config.TG_TOKEN:
-        logger.critical("未配置TG_TOKEN环境变量！")
+        logger.critical("未配置 TG_TOKEN 环境变量！")
         exit(1)
 
-    # 配置Telegram请求（支持代理）
-    request = HTTPXRequest(
-        proxy_url=Config.HTTP_PROXY,
-        connect_timeout=30,
-        read_timeout=30
-    ) if Config.HTTP_PROXY else None
+    # 配置代理客户端（使用 httpx.AsyncClient）
+    async_client = None
+    if Config.HTTP_PROXY:
+        try:
+            async_client = httpx.AsyncClient(
+                proxies=Config.HTTP_PROXY,
+                timeout=30
+            )
+            logger.info(f"代理客户端已配置：{Config.HTTP_PROXY}")
+        except Exception as e:
+            logger.error(f"代理配置失败：{str(e)}")
+            exit(1)
 
-    # 构建Bot应用
-    app = Application.builder() \
-        .token(Config.TG_TOKEN) \
-        .request(request) \
-        .build()
+    # 构建 Request 对象
+    request = HTTPXRequest(client=async_client) if async_client else None
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    logger.info(f"🤖 机器人已启动 | 输出目录：{Config.OUTPUT_ROOT}")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # 初始化 Bot
+    try:
+        app = Application.builder() \
+            .token(Config.TG_TOKEN) \
+            .request(request) \
+            .build()
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        logger.info("🤖 机器人启动成功 | 输出目录：/app/strm_output")
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Exception as e:
+        logger.critical(f"机器人启动失败：{str(e)}")
+        exit(1)
