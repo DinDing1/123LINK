@@ -108,9 +108,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not match:
         await update.message.reply_text(
-            "❌ 链接格式错误！正确示例：\n"
-            "https://www.123pan.com/s/xxx?提取码=1234\n"
-            "https://www.123pan.com/s/xxx提取码:1234"
+            "❌ 链接格式错误！"
         )
         return
 
