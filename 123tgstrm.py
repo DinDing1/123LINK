@@ -15,8 +15,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-logger = logging.getLogger(__name__)
+# 添加日志过滤配置
+logging.getLogger("httpx").setLevel(logging.WARNING)         # 抑制HTTPX库的INFO日志
+logging.getLogger("apscheduler").setLevel(logging.WARNING)  # 抑制APScheduler的INFO日志
+logging.getLogger("telegram.ext").setLevel(logging.WARNING) # 抑制Telegram扩展库的INFO日志
 
+logger = logging.getLogger(__name__)
 class Config:
     # 从环境变量读取配置（移除 HTTP_PROXY）
     TG_TOKEN = os.getenv("TG_TOKEN", "")
