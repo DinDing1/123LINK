@@ -12,12 +12,12 @@ from urllib.parse import unquote, urlparse, parse_qs
 init()
 
 class Config:
-    # Telegram Bot配置
-    TG_TOKEN = "5869372349:AAEYktPRZlsNAf-PkCRGcyaxb65vh4f5unQ"  # 需替换真实Token
-    HTTP_PROXY = "http://10.10.10.14:7890"  # 代理设置示例："http://127.0.0.1:1080"
+    TG_TOKEN = os.getenv("TG_TOKEN", "")  # 默认值为空
+    HTTP_PROXY = os.getenv("HTTP_PROXY")  # 允许为空
     
-    # STRM生成配置
-    BASE_URL = "http://10.10.10.11:8123"
+    # STRM生成配置（改为环境变量读取）
+    BASE_URL = os.getenv("BASE_URL", "http://172.17.0.1:8123")  # 设置默认值
+
     OUTPUT_ROOT = "./strm_output"
     VIDEO_EXTENSIONS = ('.mp4', '.mkv', '.avi', '.mov', '.flv', '.ts', '.iso', '.rmvb', '.m2ts')
     SUBTITLE_EXTENSIONS = ('.srt', '.ass', '.sub', '.ssa', '.vtt')
