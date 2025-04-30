@@ -1,16 +1,13 @@
 import os
 import re
 import requests
-import httpx
 from p123.tool import share_iterdir
 from datetime import datetime
 from colorama import init, Fore, Style
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
-from telegram.request import HTTPXRequest
 from urllib.parse import unquote
 import logging
-from httpx import AsyncClient, HTTPTransport, Timeout
 
 # 初始化日志和颜色输出
 init()
@@ -21,23 +18,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Config:
-    # 从环境变量读取配置
+    # 从环境变量读取配置（移除 HTTP_PROXY）
     TG_TOKEN = os.getenv("TG_TOKEN", "")
-    HTTP_PROXY = os.getenv("HTTP_PROXY")
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8123")
     OUTPUT_ROOT = "/app/strm_output"
     VIDEO_EXTENSIONS = ('.mp4', '.mkv', '.avi', '.mov', '.flv', '.ts', '.iso', '.rmvb', '.m2ts')
     SUBTITLE_EXTENSIONS = ('.srt', '.ass', '.sub', '.ssa', '.vtt')
     MAX_DEPTH = -1
-
-# 动态设置代理
-proxies = {
-    'http': Config.HTTP_PROXY,
-    'https': Config.HTTP_PROXY
-} if Config.HTTP_PROXY else None
-
-if Config.HTTP_PROXY:
-    logger.info(f"已启用代理：{Config.HTTP_PROXY}")
 
 def generate_strm_files(domain: str, share_key: str, share_pwd: str):
     """生成STRM文件及字幕文件"""
@@ -68,7 +55,7 @@ def generate_strm_files(domain: str, share_key: str, share_pwd: str):
                     counts['video'] += 1
                     logger.info(f"生成视频STRM：{relpath}")
 
-                # 处理字幕文件（带代理重试）
+                # 处理字幕文件（移除代理逻辑）
                 elif ext in Config.SUBTITLE_EXTENSIONS:
                     download_url = f"https://{domain}/{raw_uri}"
                     for retry in range(3):
@@ -76,8 +63,7 @@ def generate_strm_files(domain: str, share_key: str, share_pwd: str):
                             response = requests.get(
                                 download_url,
                                 headers={'User-Agent': 'Mozilla/5.0'},
-                                timeout=20,
-                                proxies=proxies
+                                timeout=20
                             )
                             response.raise_for_status()
                             with open(output_path, 'wb') as f:
@@ -150,25 +136,10 @@ if __name__ == "__main__":
         logger.critical("未配置 TG_TOKEN 环境变量！")
         exit(1)
 
-    # 配置代理客户端（使用 HTTPTransport）
-    async_client = None
-    if Config.HTTP_PROXY:
-        try:
-            transport = HTTPTransport(proxy=Config.HTTP_PROXY)
-            async_client = AsyncClient(
-                transport=transport,
-                timeout=Timeout(30.0)
-            )
-            exit(1)
-
-    # 构建 Request 对象
-    request = HTTPXRequest(client=async_client) if async_client else None
-
-    # 初始化 Bot
+    # 初始化 Bot（移除代理配置）
     try:
         app = Application.builder() \
             .token(Config.TG_TOKEN) \
-            .request(request) \
             .build()
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         logger.info("🤖 机器人启动成功 | 输出目录：/app/strm_output")
