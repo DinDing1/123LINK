@@ -158,9 +158,7 @@ if __name__ == "__main__":
             async_client = AsyncClient(
                 transport=transport,
                 timeout=Timeout(30.0)
-            logger.info(f"代理客户端已配置：{Config.HTTP_PROXY}")
-        except Exception as e:
-            logger.error(f"代理配置失败：{str(e)}")
+            )
             exit(1)
 
     # 构建 Request 对象
