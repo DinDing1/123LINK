@@ -1,13 +1,16 @@
 import os
 import re
 import requests
+import httpx
 from p123.tool import share_iterdir
 from datetime import datetime
 from colorama import init, Fore, Style
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.request import HTTPXRequest
 from urllib.parse import unquote
 import logging
+from httpx import AsyncClient, HTTPTransport, Timeout
 
 # 初始化日志和颜色输出
 init()
@@ -18,13 +21,39 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Config:
-    # 从环境变量读取配置（移除 HTTP_PROXY）
+    # Telegram 配置
     TG_TOKEN = os.getenv("TG_TOKEN", "")
+    # 代理配置
+    PROXY_ENABLE = os.getenv("PROXY_ENABLE", "false").lower() == "true"  # 是否启用代理
+    PROXY_URL = os.getenv("PROXY_URL", "http://10.10.10.14:7890")       # 代理地址
+    # 业务配置
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8123")
     OUTPUT_ROOT = "/app/strm_output"
     VIDEO_EXTENSIONS = ('.mp4', '.mkv', '.avi', '.mov', '.flv', '.ts', '.iso', '.rmvb', '.m2ts')
     SUBTITLE_EXTENSIONS = ('.srt', '.ass', '.sub', '.ssa', '.vtt')
     MAX_DEPTH = -1
+
+# 动态设置代理
+proxies = {
+    'http': Config.PROXY_URL,
+    'https': Config.PROXY_URL
+} if Config.PROXY_ENABLE else None
+
+def init_proxy_client():
+    """初始化带代理的异步客户端"""
+    if not Config.PROXY_ENABLE:
+        logger.info("未启用代理")
+        return None
+
+    try:
+        logger.info(f"正在初始化代理：{Config.PROXY_URL}")
+        transport = HTTPTransport(proxy=Config.PROXY_URL)
+        return AsyncClient(
+            transport=transport,
+            timeout=Timeout(30.0)
+    except Exception as e:
+        logger.error(f"代理初始化失败：{str(e)}")
+        return None
 
 def generate_strm_files(domain: str, share_key: str, share_pwd: str):
     """生成STRM文件及字幕文件"""
@@ -55,7 +84,7 @@ def generate_strm_files(domain: str, share_key: str, share_pwd: str):
                     counts['video'] += 1
                     logger.info(f"生成视频STRM：{relpath}")
 
-                # 处理字幕文件（移除代理逻辑）
+                # 处理字幕文件
                 elif ext in Config.SUBTITLE_EXTENSIONS:
                     download_url = f"https://{domain}/{raw_uri}"
                     for retry in range(3):
@@ -63,7 +92,8 @@ def generate_strm_files(domain: str, share_key: str, share_pwd: str):
                             response = requests.get(
                                 download_url,
                                 headers={'User-Agent': 'Mozilla/5.0'},
-                                timeout=20
+                                timeout=20,
+                                proxies=proxies
                             )
                             response.raise_for_status()
                             with open(output_path, 'wb') as f:
@@ -90,7 +120,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message.text
     logger.info(f"收到消息：{msg}")
 
-    # 强化正则匹配（支持所有常见格式）
+    # 正则匹配逻辑
     pattern = r'''
         (?:https?://)?                # 协议可选
         (www\.123\d+\.com)            # 域名
@@ -102,11 +132,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     match = re.search(pattern, msg, re.VERBOSE | re.IGNORECASE)
     
     if not match:
-        await update.message.reply_text(
-            "❌ 链接格式错误！正确示例：\n"
-            "https://www.123pan.com/s/xxx?提取码=1234\n"
-            "https://www.123pan.com/s/xxx提取码:1234"
-        )
+        await update.message.reply_text("❌ 链接格式错误！正确示例：\nhttps://www.123pan.com/s/xxx提取码1234")
         return
 
     domain, share_key, share_pwd = match.groups()
@@ -131,19 +157,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ 处理失败：{str(e)}")
 
 if __name__ == "__main__":
-    # 启动验证
+    # 配置验证
     if not Config.TG_TOKEN:
-        logger.critical("未配置 TG_TOKEN 环境变量！")
+        logger.critical("❌ 未配置 TG_TOKEN 环境变量！")
         exit(1)
 
-    # 初始化 Bot（移除代理配置）
+    # 初始化代理客户端
+    async_client = init_proxy_client()
+    request = HTTPXRequest(client=async_client) if async_client else None
+
+    # 构建 Bot 应用
     try:
         app = Application.builder() \
             .token(Config.TG_TOKEN) \
+            .request(request) \
             .build()
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         logger.info("🤖 机器人启动成功 | 输出目录：/app/strm_output")
-        app.run_polling(allowed_updates=Update.ALL_TYPES)
+        app.run_polling()
     except Exception as e:
         logger.critical(f"机器人启动失败：{str(e)}")
         exit(1)
