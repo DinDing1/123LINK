@@ -33,14 +33,14 @@ COPY VERSION .
 COPY start.sh .
 
 #加密选项
-#COPY auth_check.sh .
+COPY auth_check.sh .
 
 # 创建数据目录和输出目录
 RUN mkdir -p /app/data /app/strm_output && \
     chmod 777 /app/data && \
 
 #加密选项
-    #chmod 777 /app/auth_check.sh && \
+    chmod 777 /app/auth_check.sh && \
     chmod 777 /app/strm_output
 
 # 设置容器时区
@@ -52,5 +52,5 @@ RUN chmod +x start.sh
 
 # 运行命令
 # 强制使用 ENTRYPOINT
-#ENTRYPOINT ["/app/auth_check.sh"]
+ENTRYPOINT ["/app/auth_check.sh"]
 CMD ["./start.sh"]
