@@ -155,10 +155,10 @@ if __name__ == "__main__":
     if Config.HTTP_PROXY:
         try:
             transport = HTTPTransport(proxy=Config.HTTP_PROXY)
-            async_client = AsyncClient(  # 正确闭合括号
+            async_client = AsyncClient(
                 transport=transport,
                 timeout=Timeout(30.0)
-            logger.info(f"代理客户端已配置：{Config.HTTP_PROXY}")  # 正确缩进
+            logger.info(f"代理客户端已配置：{Config.HTTP_PROXY}")
         except Exception as e:
             logger.error(f"代理配置失败：{str(e)}")
             exit(1)
