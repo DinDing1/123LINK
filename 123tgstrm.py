@@ -40,19 +40,17 @@ proxies = {
 } if Config.PROXY_ENABLE else None
 
 def init_proxy_client():
-    """初始化带代理的异步客户端"""
-    if not Config.PROXY_ENABLE:
-        logger.info("未启用代理")
+    """初始化代理客户端（无括号问题版）"""
+    if not Config.PROXY_ENABLE or not Config.PROXY_URL:
         return None
-
+    
     try:
-        logger.info(f"正在初始化代理：{Config.PROXY_URL}")
-        transport = HTTPTransport(proxy=Config.PROXY_URL)
+        # 明确闭合所有括号
         return AsyncClient(
-            transport=transport,
+            transport=HTTPTransport(proxy=Config.PROXY_URL),
             timeout=Timeout(30.0)
     except Exception as e:
-        logger.error(f"代理初始化失败：{str(e)}")
+        logger.error(f"代理初始化失败: {str(e)}")
         return None
 
 def generate_strm_files(domain: str, share_key: str, share_pwd: str):
@@ -157,24 +155,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ 处理失败：{str(e)}")
 
 if __name__ == "__main__":
-    # 配置验证
-    if not Config.TG_TOKEN:
-        logger.critical("❌ 未配置 TG_TOKEN 环境变量！")
-        exit(1)
-
-    # 初始化代理客户端
+    # 初始化代理客户端（强制语法正确）
     async_client = init_proxy_client()
     request = HTTPXRequest(client=async_client) if async_client else None
-
-    # 构建 Bot 应用
-    try:
-        app = Application.builder() \
-            .token(Config.TG_TOKEN) \
-            .request(request) \
-            .build()
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-        logger.info("🤖 机器人启动成功 | 输出目录：/app/strm_output")
-        app.run_polling()
+    
+    # 构建Bot应用（简化版）
+    app = Application.builder().token(Config.TG_TOKEN)
+    if request:
+        app = app.request(request)
+    app = app.build().add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+    )
+    logger.info("🤖 机器人启动成功")
+    app.run_polling()
     except Exception as e:
         logger.critical(f"机器人启动失败：{str(e)}")
         exit(1)
