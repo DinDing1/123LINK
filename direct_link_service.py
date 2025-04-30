@@ -164,7 +164,13 @@ async def index(request: Request, uri: str):
         file_name = parts[0]
         size = int(parts[1])  # 转换为整数
         etag = parts[2].split("?")[0]
-        s3_key_flag = request.query_params.get("s3keyflag", "")
+        
+        # 处理两种查询参数格式：s3keyflag=xxx 或直接 xxx
+        query_string = str(request.url.query)
+        if '=' not in query_string and query_string:
+            s3_key_flag = query_string
+        else:
+            s3_key_flag = request.query_params.get("s3keyflag", "")
 
         # 自动清理过期条目
         clear_expired_entries()
