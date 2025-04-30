@@ -10,6 +10,7 @@ from telegram.ext import Application, MessageHandler, filters, ContextTypes
 from telegram.request import HTTPXRequest
 from urllib.parse import unquote
 import logging
+from httpx import AsyncClient, HTTPTransport, Timeout
 
 # 初始化日志和颜色输出
 init()
@@ -31,8 +32,8 @@ class Config:
 
 # 动态设置代理
 proxies = {
-    'http://': Config.HTTP_PROXY,
-    'https://': Config.HTTP_PROXY
+    'http': Config.HTTP_PROXY,
+    'https': Config.HTTP_PROXY
 } if Config.HTTP_PROXY else None
 
 if Config.HTTP_PROXY:
@@ -149,14 +150,14 @@ if __name__ == "__main__":
         logger.critical("未配置 TG_TOKEN 环境变量！")
         exit(1)
 
-    # 配置代理客户端（使用 httpx.AsyncClient）
+    # 配置代理客户端（使用 HTTPTransport）
     async_client = None
     if Config.HTTP_PROXY:
         try:
-            async_client = httpx.AsyncClient(
-                proxies=Config.HTTP_PROXY,
-                timeout=30
-            )
+            transport = HTTPTransport(proxy=Config.HTTP_PROXY)
+            async_client = AsyncClient(
+                transport=transport,
+                timeout=Timeout(30.0)
             logger.info(f"代理客户端已配置：{Config.HTTP_PROXY}")
         except Exception as e:
             logger.error(f"代理配置失败：{str(e)}")
