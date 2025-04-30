@@ -38,10 +38,11 @@ COPY auth_check.sh .
 # 创建数据目录和输出目录
 RUN mkdir -p /app/data /app/strm_output && \
     chmod 777 /app/data && \
+    chmod 777 /app/strm_output && \
 
 #加密选项
     chmod 777 /app/auth_check.sh && \
-    chmod 777 /app/strm_output
+    chmod 777 /app
 
 # 设置容器时区
 ENV TZ=Asia/Shanghai
