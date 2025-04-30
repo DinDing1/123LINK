@@ -12,15 +12,16 @@ import logging
 # 初始化日志和颜色输出
 init()
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',  # 移除 %(name)s
     level=logging.INFO
 )
-# 添加日志过滤配置
-logging.getLogger("httpx").setLevel(logging.WARNING)         # 抑制HTTPX库的INFO日志
-logging.getLogger("apscheduler").setLevel(logging.WARNING)  # 抑制APScheduler的INFO日志
-logging.getLogger("telegram.ext").setLevel(logging.WARNING) # 抑制Telegram扩展库的INFO日志
+# 抑制第三方库的 INFO 日志
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
+logging.getLogger("telegram.ext").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
 class Config:
     # 从环境变量读取配置（移除 HTTP_PROXY）
     TG_TOKEN = os.getenv("TG_TOKEN", "")
@@ -114,7 +115,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     domain, share_key, share_pwd = match.groups()
-    await update.message.reply_text("🔄 开始处理，请稍候...")
+    await update.message.reply_text("🔄 123STRM开始处理，请稍候...")
 
     try:
         start_time = datetime.now()
