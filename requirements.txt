@@ -3,6 +3,3 @@ uvicorn>=0.15.0
 httpx>=0.24.0
 python-123-client>=0.0.5
 apscheduler>=3.10.0
-colorama>=0.4.6
-python-telegram-bot>=21.0
-requests>=2.31.0
